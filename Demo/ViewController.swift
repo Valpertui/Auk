@@ -26,6 +26,11 @@ class ViewController: UIViewController, UIScrollViewDelegate {
     // Turn on the image logger. The download log will be visible in the Xcode console
     Moa.logger = MoaConsoleLogger
     
+    // When you want to display all pages side by side with an horizontal margin,
+    // you need the scrollView width to be smaller than it's superview width and to disable clipsToBounds on the scrollView
+    scrollView.clipsToBounds = true // required when using horizontalPageMargin
+    scrollView.auk.settings.horizontalPageMargin = 10
+    
     showInitialImage()
     showCurrentImageDescription()
   }
