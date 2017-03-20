@@ -8,14 +8,13 @@ class ViewController: UIViewController, UIScrollViewDelegate {
   var imageDescriptions = [String]()
   @IBOutlet weak var imageDescriptionLabel: UILabel!
   
+  @IBOutlet weak var deleteButton: UIButton!
   @IBOutlet weak var leftButton: UIButton!
   @IBOutlet weak var rightButton: UIButton!
   @IBOutlet weak var autoScrollButton: UIButton!
   
   override func viewDidLoad() {
     super.viewDidLoad()
-    
-    layoutButtons()
     
     scrollView.delegate = self
     scrollView.auk.settings.placeholderImage = UIImage(named: "great_auk_placeholder.png")
@@ -25,6 +24,12 @@ class ViewController: UIViewController, UIScrollViewDelegate {
     // you need the scrollView width to be smaller than it's superview width and to disable clipsToBounds on the scrollView
     scrollView.clipsToBounds = false // required when using horizontalPageMargin
     scrollView.auk.settings.horizontalPageMargin = 10
+    
+    // Preload the next and previous images
+    scrollView.auk.settings.preloadRemoteImagesAround = 1
+    
+    // Turn on the image logger. The download log will be visible in the Xcode console
+    Moa.logger = MoaConsoleLogger
     
     showInitialImage()
     showCurrentImageDescription()
@@ -41,7 +46,7 @@ class ViewController: UIViewController, UIScrollViewDelegate {
   }
 
   // Show local images
-  @IBAction func onShowLocalTapped(sender: AnyObject) {
+  @IBAction func onShowLocalTapped(_ sender: AnyObject) {
     scrollView.auk.stopAutoScroll()
     for localImage in DemoConstants.localImages {
       if let image = UIImage(named: localImage.fileName) {
@@ -54,7 +59,7 @@ class ViewController: UIViewController, UIScrollViewDelegate {
   }
 
   // Show remote images
-  @IBAction func onShowRemoteTapped(sender: AnyObject) {
+  @IBAction func onShowRemoteTapped(_ sender: AnyObject) {
     scrollView.auk.stopAutoScroll()
     for remoteImage in DemoConstants.remoteImages {
       let url =  "\(DemoConstants.remoteImageBaseUrl)\(remoteImage.fileName)"
@@ -67,7 +72,7 @@ class ViewController: UIViewController, UIScrollViewDelegate {
   }
   
   // Scroll to the next image
-  @IBAction func onShowRightButtonTapped(sender: AnyObject) {
+  @IBAction func onShowRightButtonTapped(_ sender: AnyObject) {
     scrollView.auk.stopAutoScroll()
     
     if RightToLeft.isRightToLeft(view) {
@@ -78,7 +83,7 @@ class ViewController: UIViewController, UIScrollViewDelegate {
   }
 
   // Scroll to the previous image
-  @IBAction func onShowLeftButtonTapped(sender: AnyObject) {
+  @IBAction func onShowLeftButtonTapped(_ sender: AnyObject) {
     scrollView.auk.stopAutoScroll()
     
     if RightToLeft.isRightToLeft(view) {
@@ -89,84 +94,64 @@ class ViewController: UIViewController, UIScrollViewDelegate {
   }
 
   // Remove all images
-  @IBAction func onDeleteButtonTapped(sender: AnyObject) {
+  @IBAction func onDeleteButtonTapped(_ sender: AnyObject) {
     scrollView.auk.stopAutoScroll()
     scrollView.auk.removeAll()
     imageDescriptions = []
     showCurrentImageDescription()
   }
 
-  @IBAction func onDeleteCurrentButtonTapped(sender: AnyObject) {
-    guard let indexToRemove = scrollView.auk.currentPageIndex else {
-      return
-    }
+  @IBAction func onDeleteCurrentButtonTapped(_ sender: AnyObject) {
+    guard let indexToRemove = scrollView.auk.currentPageIndex else { return }
     scrollView.auk.stopAutoScroll()
     
-    if scrollView.auk.removeCurrentPage(animated: true) {
-      if imageDescriptions.count >= scrollView.auk.numberOfPages {
-        imageDescriptions.removeAtIndex(indexToRemove)
-      }
-      showCurrentImageDescription()
+    scrollView.auk.removeCurrentPage(animated: true)
+  
+    if imageDescriptions.count >= scrollView.auk.numberOfPages {
+      imageDescriptions.remove(at: indexToRemove)
     }
+    
+    showCurrentImageDescription()
   }
   
-  @IBAction func onAutoscrollTapped(sender: AnyObject) {
+  @IBAction func onAutoscrollTapped(_ sender: AnyObject) {
     scrollView.auk.startAutoScroll(delaySeconds: 2)
   }
   
-  @IBAction func onScrollViewTapped(sender: AnyObject) {
-    imageDescriptionLabel.text = "Tapped image #\(scrollView.auk.currentPageIndex)"
-  }
-  
-  private func layoutButtons() {
-    layoutButtons(leftButton, secondView: autoScrollButton)
-    layoutButtons(autoScrollButton, secondView: rightButton)
-  }
-  
-  // Use left/right constraints instead of leading/trailing to prevent buttons from changing their place for right-to-left languages.
-  private func layoutButtons(firstView: UIView, secondView: UIView) {
-    let constraint = NSLayoutConstraint(
-      item: secondView,
-      attribute: NSLayoutAttribute.Left,
-      relatedBy: NSLayoutRelation.Equal,
-      toItem: firstView,
-      attribute: NSLayoutAttribute.Right,
-      multiplier: 1,
-      constant: 35)
-    
-    view.addConstraint(constraint)
+  @IBAction func onScrollViewTapped(_ sender: AnyObject) {
+    imageDescriptionLabel.text = "Tapped image #\(scrollView.auk.currentPageIndex ?? 42)"
   }
   
   // MARK: - Handle orientation change
   
   /// Animate scroll view on orientation change
-  override func viewWillTransitionToSize(size: CGSize,
-                                         withTransitionCoordinator coordinator: UIViewControllerTransitionCoordinator) {
+  override func viewWillTransition(to size: CGSize,
+                                         with coordinator: UIViewControllerTransitionCoordinator) {
     
-    super.viewWillTransitionToSize(size, withTransitionCoordinator: coordinator)
+    super.viewWillTransition(to: size, with: coordinator)
     
     guard let pageIndex = scrollView.auk.currentPageIndex else { return }
     let newScrollViewWidth = size.width // Assuming scroll view occupies 100% of the screen width
     
-    coordinator.animateAlongsideTransition({ [weak self] _ in
-      self?.scrollView.auk.scrollTo(pageIndex, pageWidth: newScrollViewWidth, animated: false)
-      }, completion: nil)
+    coordinator.animate(alongsideTransition: { [weak self] _ in
+      self?.scrollView.auk.scrollToPage(atIndex: pageIndex, pageWidth: newScrollViewWidth, animated: false)
+    }, completion: nil)
   }
   
   /// Animate scroll view on orientation change
   /// Support iOS 7 and older
-  override func willRotateToInterfaceOrientation(toInterfaceOrientation: UIInterfaceOrientation,
-                                                 duration: NSTimeInterval) {
+  override func willRotate(to toInterfaceOrientation: UIInterfaceOrientation,
+                                                 duration: TimeInterval) {
     
-    super.willRotateToInterfaceOrientation(toInterfaceOrientation, duration: duration)
+    super.willRotate(to: toInterfaceOrientation, duration: duration)
     
-    var screenWidth = UIScreen.mainScreen().bounds.height
+    var screenWidth = UIScreen.main.bounds.height
     if UIInterfaceOrientationIsPortrait(toInterfaceOrientation) {
-      screenWidth = UIScreen.mainScreen().bounds.width
+      screenWidth = UIScreen.main.bounds.width
     }
     
     guard let pageIndex = scrollView.auk.currentPageIndex else { return }
-    scrollView.auk.scrollTo(pageIndex, pageWidth: screenWidth, animated: false)
+    scrollView.auk.scrollToPage(atIndex: pageIndex, pageWidth: screenWidth, animated: false)
   }
   
   // MARK: - Image description
@@ -179,7 +164,7 @@ class ViewController: UIViewController, UIScrollViewDelegate {
     }
   }
   
-  private func changeCurrentImageDescription(description: String) {
+  private func changeCurrentImageDescription(_ description: String) {
     guard let currentPageIndex = scrollView.auk.currentPageIndex else { return }
 
     if currentPageIndex >= imageDescriptions.count {
@@ -202,7 +187,7 @@ class ViewController: UIViewController, UIScrollViewDelegate {
   
   // MARK: - UIScrollViewDelegate
   
-  func scrollViewDidScroll(scrollView: UIScrollView) {
+  func scrollViewDidScroll(_ scrollView: UIScrollView) {
     showCurrentImageDescription()
   }
 }

@@ -29,10 +29,10 @@ class AukInterfaceImagesTests: XCTestCase {
   func testReturnImages() {
     let simulator = MoaSimulator.simulate("site.com")
     auk.show(url: "http://site.com/moa.png")
-    simulator.respondWithImage(uiImageFromFile("67px.png"))
+    simulator.respondWithImage(createImage67px())
     
-    auk.show(image: uiImageFromFile("35px.jpg"))
-    auk.show(image: uiImageFromFile("96px.png"))
+    auk.show(image: createImage35px())
+    auk.show(image: createImage96px())
     
     // Returns three images
     // -------------
@@ -44,8 +44,8 @@ class AukInterfaceImagesTests: XCTestCase {
   }
   
   func testDoesNotReturnPlaceholderImage() {
-    auk.settings.placeholderImage = uiImageFromFile("35px.jpg")
-    MoaSimulator.simulate("site.com")
+    auk.settings.placeholderImage = createImage35px()
+    _ = MoaSimulator.simulate("site.com")
     auk.show(url: "http://site.com/moa.png")
     
     XCTAssertEqual(0, auk.images.count)

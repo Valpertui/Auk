@@ -23,7 +23,7 @@ class AukInterfaceCurrentPageIndexTestsTests: XCTestCase {
     // Show 2 images
     // -------------
     
-    let image = uiImageFromFile("96px.png")
+    let image = createImage96px()
     auk.show(image: image)
     auk.show(image: image)
     auk.show(image: image)
@@ -44,7 +44,7 @@ class AukInterfaceCurrentPageIndexTestsTests: XCTestCase {
   }
   
   func testCurrentPageIndex_indexOutOfBounds() {
-    let image = uiImageFromFile("96px.png")
+    let image = createImage96px()
     auk.show(image: image)
     auk.show(image: image)
     
@@ -67,12 +67,12 @@ class AukInterfaceCurrentPageIndexTestsTests: XCTestCase {
   
   func testCurrenPageIndex_rightToLeft() {
     if #available(iOS 9.0, *) {
-      scrollView.semanticContentAttribute = .ForceRightToLeft
+      scrollView.semanticContentAttribute = .forceRightToLeft
      
       // Show 2 images
       // -------------
       
-      let image = uiImageFromFile("96px.png")
+      let image = createImage96px()
       auk.show(image: image)
       auk.show(image: image)
       auk.show(image: image)
@@ -101,7 +101,7 @@ class AukInterfaceCurrentPageIndexTestsTests: XCTestCase {
   func testCurrentPageIndex_handleZeroWidth() {
     scrollView.bounds = CGRect(origin: CGPoint(), size: CGSize())
     
-    let image = uiImageFromFile("96px.png")
+    let image = createImage96px()
     auk.show(image: image)
     
     XCTAssertNil(auk.currentPageIndex)

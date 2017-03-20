@@ -12,7 +12,7 @@ struct AukScrollViewContent {
   - returns: Array of scroll view pages.
   
   */
-  static func aukPages(scrollView: UIScrollView) -> [AukPage] {
+  static func aukPages(_ scrollView: UIScrollView) -> [AukPage] {
     return scrollView.subviews.filter { $0 is AukPage }.map { $0 as! AukPage }
   }
   
@@ -21,7 +21,7 @@ struct AukScrollViewContent {
   - returns: Page at index. Returns nil if index is out of bounds.
  
   */
-  static func pageAt(index: Int, scrollView: UIScrollView) -> AukPage? {
+  static func page(atIndex index: Int, scrollView: UIScrollView) -> AukPage? {
     let pages = aukPages(scrollView)
     if index < 0 { return nil }
     if index >= pages.count { return nil }
@@ -31,12 +31,22 @@ struct AukScrollViewContent {
   /**
   
   Creates Auto Layout constraints for positioning the page view inside the scroll view.
+   
+  - parameter scrollView: scroll view to layout.
+
+  - parameter animated: will animate the layout if true. Default value: false.
+   
+  - parameter animationDurationInSeconds: duration of the layout animation. Ignored if `animated` parameter is false.
+
+  - parameter completion: function that is called when layout animation finishes. Called immediately if not animated.
   
   */
-  static func layout(scrollView: UIScrollView, animated: Bool = false, animationDuration : Double = 0.2) {
+  static func layout(_ scrollView: UIScrollView, animated: Bool = false,
+                     animationDurationInSeconds: Double = 0.2, completion: (()->())? = nil) {
+    
     let pages = aukPages(scrollView)
-    let settings = scrollView.auk.settings
-    for (index, page) in pages.enumerate() {
+	let settings = scrollView.auk.settings
+    for (index, page) in pages.enumerated() {
       
       // Delete current constraints by removing the view and adding it back to its superview
       page.removeFromSuperview()
@@ -45,7 +55,7 @@ struct AukScrollViewContent {
       page.translatesAutoresizingMaskIntoConstraints = false
       
       // Make page size equal to the scroll view size
-      scrollView.addConstraint(NSLayoutConstraint(item: page, attribute: .Width, relatedBy: .Equal, toItem: scrollView, attribute: .Width, multiplier: 1, constant: -settings.horizontalPageMargin * 2))
+      scrollView.addConstraint(NSLayoutConstraint(item: page, attribute: .width, relatedBy: .equal, toItem: scrollView, attribute: .width, multiplier: 1, constant: -settings.horizontalPageMargin * 2))
       iiAutolayoutConstraints.equalHeight(page, viewTwo: scrollView, constraintContainer: scrollView)
       // Stretch the page vertically to fill the height of the scroll view
       iiAutolayoutConstraints.fillParent(page, parentView: scrollView, margin: 0, vertically: true)
@@ -53,13 +63,13 @@ struct AukScrollViewContent {
       if index == 0 {
         // Align the leading edge of the first page to the leading edge of the scroll view.
         iiAutolayoutConstraints.alignSameAttributes(page, toItem: scrollView,
-          constraintContainer: scrollView, attribute: NSLayoutAttribute.Leading, margin: settings.horizontalPageMargin)
+          constraintContainer: scrollView, attribute: NSLayoutAttribute.leading, margin: settings.horizontalPageMargin)
       }
       
       if index == pages.count - 1 {
         // Align the trailing edge of the last page to the trailing edge of the scroll view.
         iiAutolayoutConstraints.alignSameAttributes(page, toItem: scrollView,
-          constraintContainer: scrollView, attribute: NSLayoutAttribute.Trailing, margin: settings.horizontalPageMargin)
+          constraintContainer: scrollView, attribute: NSLayoutAttribute.trailing, margin: settings.horizontalPageMargin)
       }
     }
     
@@ -68,11 +78,17 @@ struct AukScrollViewContent {
       margin: settings.horizontalPageMargin * 2, vertically: false)
     
     if animated {
-      UIView.animateWithDuration(animationDuration) {
-        scrollView.layoutIfNeeded()
-      }
+      iiAnimator.animator.animate(name: "layoutIfNeeded", withDuration: animationDurationInSeconds,
+        animations: {
+          scrollView.layoutIfNeeded()
+        },
+        completion: { _ in
+          completion?()
+        }
+      )
     } else {
       scrollView.layoutIfNeeded()
+      completion?()
     }
   }
 }
