@@ -50,6 +50,7 @@ class iiAutolayoutConstraints {
   
   // MARK: - Equal height and width
   
+  @discardableResult
   class func equalHeight(_ viewOne: UIView, viewTwo: UIView, constraintContainer: UIView) -> [NSLayoutConstraint] {
     
     return equalWidthOrHeight(viewOne, viewTwo: viewTwo, constraintContainer: constraintContainer, isHeight: true)
